@@ -2,7 +2,7 @@
 
 **OptiTask** is a smart, AI-powered task prioritization assistant that helps you organize your day efficiently. It combines a high-performance C core for task management logic with a modern React frontend and a Python FastAPI backend integrated with a local LLM (TinyLlama) for conversational assistance.
 
-![OptiTask UI](https://via.placeholder.com/800x450.png?text=OptiTask+Screenshot)
+
 
 ## 🚀 Features
 
