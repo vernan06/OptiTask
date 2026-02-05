@@ -180,6 +180,12 @@ export default function App() {
     await fetchTasks();
   };
 
+  const updatePriority = async (id, currentPriority) => {
+    const newPriority = currentPriority >= 5 ? 1 : currentPriority + 1;
+    await axios.patch(`${API}/tasks/${id}`, { priority: newPriority });
+    await fetchTasks();
+  };
+
   const executeCommand = async () => {
     if (!commandText.trim()) return;
     try {
@@ -450,7 +456,7 @@ export default function App() {
                 <div>
                   <div className="task-title">{t.name}</div>
                   <div className="task-sub">
-                    {t.category} • P{t.priority} • {t.deadline || "No date"} {t.start_time ? `• ${t.start_time}` : ""}
+                    {t.category} • <span className="priority-badge" onClick={() => updatePriority(t.id, t.priority)} title="Click to change priority">P{t.priority}</span> • {t.deadline || "No date"} {t.start_time ? `• ${t.start_time}` : ""}
                   </div>
                 </div>
 

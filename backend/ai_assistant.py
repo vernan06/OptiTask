@@ -109,9 +109,23 @@ def query_llm(msg: str, ctx: str) -> str:
     if not pipe:
         return "AI offline. Try 'help'!"
     try:
-        system = f"You are OptiTask. Brief replies. Today: {get_today()}. Tasks: {ctx or 'None'}."
-        result = pipe(f"User: {msg}\nAssistant:", max_new_tokens=100, do_sample=True, temperature=0.7)
-        response = result[0]["generated_text"].split("Assistant:")[-1].strip()
+        today = get_today()
+        time_now = get_time()
+        system = f"""You are OptiTask, a brilliant and enthusiastic productivity AI assistant.
+You help users manage tasks, prioritize work, and stay productive.
+Today: {today}. Current time: {time_now}.
+User's current tasks: {ctx or 'No active tasks'}.
+
+Guidelines:
+- Be concise but helpful (2-3 sentences max)
+- Be encouraging and positive
+- If asked about tasks, reference their actual task list
+- For productivity advice, give actionable tips
+- You can help add, complete, or organize tasks"""
+        result = pipe(f"{system}\n\nUser: {msg}\nOptiTask:", max_new_tokens=150, do_sample=True, temperature=0.7)
+        response = result[0]["generated_text"].split("OptiTask:")[-1].strip()
+        # Clean up any artifacts
+        response = response.split("User:")[0].strip()
         print(f"LLM response: {response[:100]}...")
         return response
     except Exception as e:
@@ -163,17 +177,23 @@ def process_message(text: str, tasks: list = None) -> Dict[str, Any]:
     text_lower = text.lower()
     
     if "priorit" in text_lower or "urgent" in text_lower:
-        return {"action": "reply", "response": "Great question! Try the Eisenhower Matrix:\n\n1. Urgent + Important → Do first\n2. Important, not urgent → Schedule it\n3. Urgent, not important → Delegate\n4. Neither → Skip it\n\nFocus on what moves the needle!"}
+        return {"action": "reply", "response": "Great question! Here's the Eisenhower Matrix:\n\n🔴 **Urgent + Important** → Do it NOW\n🟡 **Important, not urgent** → Schedule it\n🟠 **Urgent, not important** → Delegate if possible\n⚪ **Neither** → Skip it!\n\nFocus on what truly moves the needle. Want me to help prioritize your tasks?"}
     
     if "productiv" in text_lower or "focus" in text_lower:
-        return {"action": "reply", "response": "Here are my top tips:\n\n• Start with your hardest task (eat the frog!)\n• Use time blocks of 25-50 mins\n• Remove distractions (phone away!)\n• Take breaks every hour\n\nWant me to set up a focus session?"}
+        return {"action": "reply", "response": "Here are my top productivity hacks:\n\n⚡ **Eat the frog** - Start with your hardest task\n⏰ **Time blocks** - Work in 25-50 min sprints\n📵 **Deep focus** - Phone on silent, notifications off\n🧘 **Breaks matter** - 5 min rest every hour\n\nWant me to start a focus session for you?"}
     
     if "overwhelm" in text_lower or "stress" in text_lower or "too much" in text_lower:
-        return {"action": "reply", "response": "Take a breath! Here's what helps:\n\n1. Brain dump everything into tasks\n2. Pick just ONE thing to start\n3. Set a 25-min timer\n4. Celebrate small wins\n\nYou've got this! What's your top priority?"}
+        return {"action": "reply", "response": "I hear you! Here's how to regain control:\n\n1. 🧠 **Brain dump** - Get everything out of your head into tasks\n2. 🎯 **Pick ONE thing** - Just the next action\n3. ⏱️ **Set a 25-min timer** - Start small\n4. 🎉 **Celebrate small wins**\n\nYou've got this! What's the single most important thing right now?"}
     
     if "time" in text_lower and "manag" in text_lower:
-        return {"action": "reply", "response": "Time management tips:\n\n• Plan tomorrow tonight\n• Batch similar tasks\n• Say no to non-essentials\n• Use deadlines (even fake ones!)\n\nShall I help you schedule something?"}
+        return {"action": "reply", "response": "Master your time with these strategies:\n\n📋 **Plan tomorrow tonight** - Wake up with purpose\n📦 **Batch similar tasks** - Email, calls, admin together\n🚫 **Learn to say no** - Protect your time\n⏰ **Fake deadlines work!** - Create urgency\n\nShall I help you block out your day?"}
     
-    # Generic fallback
-    return {"action": "reply", "response": "I can help you manage tasks! Try:\n• 'Add meeting tomorrow 3pm'\n• 'Show my tasks'\n• 'Mark task 1 done'\n\nOr ask me productivity tips!"}
+    if "motivat" in text_lower or "procrastinat" in text_lower:
+        return {"action": "reply", "response": "Struggling to start? Try these:\n\n🔥 **2-minute rule** - If it takes <2 mins, do it NOW\n🎵 **Environment matters** - Create a focus-friendly space\n🏆 **Reward yourself** - Promise a treat after completing tasks\n👥 **Accountability** - Tell someone your goal\n\nWhat task has been lingering? Let's tackle it together!"}
+    
+    if "hello" in text_lower or "hi" in text_lower or "hey" in text_lower:
+        return {"action": "reply", "response": f"Hey there! 👋 I'm OptiTask, your productivity partner. It's {get_time()} - let's make the most of it! What can I help you with?"}
+    
+    # Generic fallback with more personality
+    return {"action": "reply", "response": "I'm OptiTask, your productivity sidekick! 🚀\n\nI can:\n• ➕ **Add tasks** - 'Add meeting tomorrow 3pm'\n• 📋 **Show schedule** - 'What's on my plate?'\n• ✅ **Complete tasks** - 'Mark task 1 done'\n• 💡 **Give advice** - 'How to stay focused?'\n\nWhat would you like to tackle?"}
 

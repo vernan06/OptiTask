@@ -32,7 +32,7 @@ def _parse_date(text: str) -> str:
     if "today" in t:
         return today.isoformat()
 
-    if any(x in t for x in ["tomorrow", "tmr", "tmrw"]):
+    if any(x in t for x in ["tomorrow", "tmr", "tmrw", "tommow"]):
         return (today + timedelta(days=1)).isoformat()
 
     m = re.search(r"\bin\s+(\d+)\s+days?\b", t)
@@ -42,7 +42,18 @@ def _parse_date(text: str) -> str:
             return "__PAST__"
         return (today + timedelta(days=days)).isoformat()
 
-    # next monday / monday
+    # next week [day] - means the same day in the FOLLOWING week (7+ days ahead)
+    for name, num in _WEEKDAYS.items():
+        if re.search(rf"\bnext\s+week\s+{re.escape(name)}\b", t):
+            cur = today.weekday()
+            # Calculate days to that weekday in the NEXT week
+            ahead = (num - cur) % 7
+            if ahead == 0:
+                ahead = 7
+            ahead += 7  # Add a full week
+            return (today + timedelta(days=ahead)).isoformat()
+
+    # next monday / monday - means THIS coming occurrence
     for name, num in _WEEKDAYS.items():
         if re.search(rf"\bnext\s+{re.escape(name)}\b", t) or re.search(rf"\b{re.escape(name)}\b", t):
             cur = today.weekday()
@@ -192,7 +203,7 @@ def parse_command(text: str) -> dict:
         r"\bp[1-5]\b",
         r"\b\d+\s*h(?:\s*\d+\s*m)?\b",
         r"\b\d+\s*m\b",
-        r"\b(today|tomorrow|tmr|tmrw|yesterday)\b",  # Added yesterday
+        r"\b(today|tomorrow|tmr|tmrw|tommow|yesterday)\b",  # Added yesterday and tommow typo
         r"\bin\s+\d+\s+days?\b",
         r"\bnext\s+(monday|mon|tuesday|tue|tues|wednesday|wed|thursday|thu|thur|thurs|friday|fri|saturday|sat|sunday|sun)\b",
         r"\b(monday|mon|tuesday|tue|tues|wednesday|wed|thursday|thu|thur|thurs|friday|fri|saturday|sat|sunday|sun)\b",
