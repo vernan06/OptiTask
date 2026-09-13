@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
 import Assistant from "./Assistant";
+import {
+  createTask,
+  deleteTask as removeTask,
+  ghostSchedule,
+  listTasks,
+  parseCommand,
+  updateTask,
+} from "./taskService";
 import {
   Inbox,
   Calendar,
@@ -19,8 +26,6 @@ import {
   Command,
 } from "lucide-react";
 
-const API = "http://127.0.0.1:8000";
-
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -38,7 +43,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("inbox"); // inbox | upcoming | completed
 
   // Tasks
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(() => listTasks());
   const [quickTitle, setQuickTitle] = useState("");
 
   // Calendar
@@ -50,9 +55,6 @@ export default function App() {
   const [commandOpen, setCommandOpen] = useState(false);
   const [commandText, setCommandText] = useState("");
   const [commandError, setCommandError] = useState("");
-
-  // Ghost scheduling
-  const [ghosts, setGhosts] = useState([]);
 
   // Focus Timer (inline edit)
   const [sessionTotal, setSessionTotal] = useState(25 * 60);
@@ -67,14 +69,9 @@ export default function App() {
 
   const notifiedDoneRef = useRef(false);
 
-  const fetchTasks = async () => {
-    const res = await axios.get(`${API}/tasks`);
-    setTasks(res.data || []);
+  const fetchTasks = () => {
+    setTasks(listTasks());
   };
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
 
   // Timer tick
   useEffect(() => {
@@ -91,7 +88,7 @@ export default function App() {
   useEffect(() => {
     if (timeLeft === 0 && !notifiedDoneRef.current) {
       notifiedDoneRef.current = true;
-      setIsActive(false);
+      window.setTimeout(() => setIsActive(false), 0);
 
       if ("Notification" in window) {
         if (Notification.permission === "granted") {
@@ -155,9 +152,9 @@ export default function App() {
     setIsActive((v) => !v);
   };
 
-  const addTask = async () => {
+  const addTask = () => {
     if (!quickTitle.trim()) return;
-    await axios.post(`${API}/tasks`, {
+    createTask({
       name: quickTitle.trim(),
       category: "general",
       priority: 3,
@@ -167,35 +164,35 @@ export default function App() {
       status: 0,
     });
     setQuickTitle("");
-    await fetchTasks();
+    fetchTasks();
   };
 
-  const completeTask = async (id) => {
-    await axios.patch(`${API}/tasks/${id}`, { status: 1 });
-    await fetchTasks();
+  const completeTask = (id) => {
+    updateTask(id, { status: 1 });
+    fetchTasks();
   };
 
-  const deleteTask = async (id) => {
-    await axios.delete(`${API}/tasks/${id}`);
-    await fetchTasks();
+  const deleteTask = (id) => {
+    removeTask(id);
+    fetchTasks();
   };
 
-  const updatePriority = async (id, currentPriority) => {
+  const updatePriority = (id, currentPriority) => {
     const newPriority = currentPriority >= 5 ? 1 : currentPriority + 1;
-    await axios.patch(`${API}/tasks/${id}`, { priority: newPriority });
-    await fetchTasks();
+    updateTask(id, { priority: newPriority });
+    fetchTasks();
   };
 
-  const executeCommand = async () => {
+  const executeCommand = () => {
     if (!commandText.trim()) return;
     try {
       setCommandError("");
-      await axios.post(`${API}/command`, { text: commandText.trim() });
+      createTask(parseCommand(commandText));
       setCommandText("");
       setCommandOpen(false);
-      await fetchTasks();
+      fetchTasks();
     } catch (err) {
-      setCommandError(err?.response?.data?.detail || "Could not parse that");
+      setCommandError(err?.message || "Could not parse that");
     }
   };
 
@@ -227,7 +224,7 @@ export default function App() {
     return tasks.filter((t) => t.status === 0 && (t.deadline || "") >= todayIso);
   }, [tasks, activeTab, todayIso]);
 
-  const filteredActive = useMemo(() => tasks.filter((t) => t.status === 0), [tasks]);
+  const filteredActive = tasks.filter((t) => t.status === 0);
 
   const scheduledForSelectedDate = useMemo(() => {
     return tasks.filter(
@@ -235,14 +232,10 @@ export default function App() {
     );
   }, [tasks, selectedDate]);
 
-  // Fetch ghost schedule when timetable expands OR date changes OR tasks change
-  useEffect(() => {
-    if (!timetableExpanded) return;
-    axios
-      .get(`${API}/ghost-schedule`, { params: { date: selectedDate } })
-      .then((res) => setGhosts(res.data?.suggestions || []))
-      .catch(() => setGhosts([]));
-  }, [timetableExpanded, selectedDate, tasks]);
+  const visibleGhosts = useMemo(
+    () => (timetableExpanded ? ghostSchedule(selectedDate, tasks) : []),
+    [timetableExpanded, selectedDate, tasks]
+  );
 
   // Timetable slots: 08:00–20:00 in 30-min steps
   const slots = useMemo(() => {
@@ -258,15 +251,12 @@ export default function App() {
   };
 
   const findGhostAt = (hhmm) => {
-    return ghosts.find((g) => g.suggested_time === hhmm) || null;
+    return visibleGhosts.find((g) => g.suggested_time === hhmm) || null;
   };
 
-  const solidifyGhost = async (g) => {
-    await axios.post(`${API}/solidify-ghost/${g.task_id}`, {
-      time_slot: g.suggested_time,
-      deadline: selectedDate,
-    });
-    await fetchTasks();
+  const solidifyGhost = (g) => {
+    updateTask(g.task_id, { start_time: g.suggested_time, deadline: selectedDate });
+    fetchTasks();
   };
 
   // Flow progress

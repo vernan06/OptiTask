@@ -1,24 +1,24 @@
 # ⚡ OptiTask
 
-**OptiTask** is a smart, AI-powered task prioritization assistant that helps you organize your day efficiently. It combines a high-performance C core for task management logic with a modern React frontend and a Python FastAPI backend integrated with a local LLM (TinyLlama) for conversational assistance.
+**OptiTask** is a smart task prioritization assistant that runs as a single static React application. Tasks, command parsing, ghost scheduling, and assistant replies run in the browser, with data persisted locally in `localStorage`.
 
 
 
 ## 🚀 Features
 
-- **✅ Smart Task Management**: Create, edit, and reorganize tasks with drag-and-drop.
+- **✅ Smart Task Management**: Create, prioritize, complete, and delete tasks.
 - **🤖 AI Assistant**: Chat with OptiTask to add tasks via natural language, ask about your schedule, or get productivity tips.
-  - *Hybrid Engine*: Fast pattern matching for commands + Local LLM (TinyLlama) for complex queries.
+  - *Browser Engine*: Fast pattern matching for commands and productivity guidance without a server.
   - *Voice Control*: Speak to your assistant directly from the browser.
-- **⚡ High Performance**: Core logic (sorting, prioritizing) written in C for speed.
+- **⚡ Fast and private**: No API keys, server, database, or external service is required.
 - **📅 Smart Scheduling**: "Ghost Schedule" feature suggests optimal times for unscheduled tasks.
-- **🔒 Privacy First**: All data runs locally. The LLM runs on your machine via `transformers/torch`—no API keys required.
+- **🔒 Privacy First**: Your tasks stay in the browser on the device where you use the app.
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: React (Vite), Lucide Icons, CSS Variables (Neon/Dark Theme)
-- **Backend**: Python (FastAPI), SQLite, HuggingFace Transformers (TinyLlama)
-- **Core Logic**: C (ctypes integration)
+- **Storage and logic**: Browser `localStorage` and JavaScript modules
+- **Hosting**: GitHub Pages via GitHub Actions
 
 ---
 
@@ -26,58 +26,33 @@
 
 ### Prerequisites
 - **Node.js** (v16+)
-- **Python** (v3.8+)
-- **GCC Compiler** (for Windows, usually MinGW, if you need to rebuild the C core)
+- **Node.js** (v20+ recommended)
 
-### 1. Clone the Repository
+### Clone the Repository
 ```bash
 git clone https://github.com/yourusername/optitask.git
 cd optitask
 ```
 
-### 2. Backend Setup
-Navigate to the backend folder and install dependencies:
-
-```bash
-cd backend
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-# source venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-> **Note**: The first time you run the AI assistant features, it will download the TinyLlama model (~2GB). This happens automatically.
-
-### 3. Frontend Setup
-Open a new terminal, navigate to the frontend folder:
+### Install and run
 
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
 
 ---
 
 ## ▶️ Running the App
 
-You need to run **both** the backend and frontend terminals simultaneously.
+There is no second backend process. The app runs at the local URL printed by Vite.
 
-### Terminal 1: Backend
-```bash
-cd backend
-python main.py
-```
-*Server runs at `http://127.0.0.1:8000`*
+## GitHub Pages
 
-### Terminal 2: Frontend
-```bash
-cd frontend
-npm run dev
-```
-*App runs at `http://localhost:5173`*
+Push to the `main` branch and `.github/workflows/deploy-pages.yml` builds `frontend` and publishes it to GitHub Pages. In repository settings, set **Pages > Build and deployment > Source** to **GitHub Actions**.
+
+The published site is `https://vernan06.github.io/OptiTask/`.
 
 ---
 
@@ -94,24 +69,7 @@ Click the **Bot Icon** in the bottom-right corner to open the chat.
 
 **Productivity Tips:**
 - Ask: *"How do I stop procrastinating?"* or *"Give me a productivity tip"*
-- The assistant uses a smart fallback system to give instant advice even if the LLM is loading.
-
----
-
-## 🔧 Troubleshooting
-
-### C Core Issues
-If you see errors related to `task_manager.dll` or `ctypes`, you may need to recompile the C core for your system.
-
-1. Navigate to `backend/c_core`
-2. Run `build.bat` (Windows) or compile manually:
-   ```bash
-   gcc -shared -o task_manager.dll task_manager.c
-   ```
-
-### LLM / AI Issues
-- **"Had trouble thinking"**: This usually means the LLM failed to load (memory issue) or failed to download. Check the backend terminal logs for details.
-- **Performance**: TinyLlama requires ~4GB RAM. If your system is slow, the assistant defaults to **Pattern Matching mode**, which is instant and covers all task management commands without the LLM.
+- Browser speech recognition and text-to-speech depend on browser support.
 
 ---
 

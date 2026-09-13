@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Mic, MicOff, Volume2, VolumeX, Send, Bot, User, Loader2 } from 'lucide-react';
-
-const API_BASE = 'http://127.0.0.1:8000';
+import { assistantMessage } from './taskService';
 
 export default function Assistant({ onTaskUpdate }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -71,8 +70,8 @@ export default function Assistant({ onTaskUpdate }) {
     }
   };
 
-  // Send message to backend
-  const sendMessage = async () => {
+  // Process messages locally so the app can run as a static site.
+  const sendMessage = () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
@@ -81,26 +80,17 @@ export default function Assistant({ onTaskUpdate }) {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage })
-      });
-
-      const data = await res.json();
-      const assistantResponse = data.response || "I understand!";
+      const data = assistantMessage(userMessage);
+      const assistantResponse = data.response || 'I understand!';
 
       setMessages(prev => [...prev, { role: 'assistant', content: assistantResponse }]);
       speak(assistantResponse);
 
-      // Refresh tasks if action was taken
-      if (['add_task', 'complete_task', 'delete_task'].includes(data.action)) {
-        onTaskUpdate?.();
-      }
+      if (data.action) onTaskUpdate?.();
     } catch (error) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: "Oops! Having trouble connecting. Make sure the backend is running." 
+        content: error?.message || 'I could not process that request.'
       }]);
     } finally {
       setIsLoading(false);

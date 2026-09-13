@@ -1,27 +1,19 @@
-# 🚀 Smart Task Prioritizer
+# OptiTask frontend
 
-An AI-powered task management system built with **C (core data structures)**, **Python (FastAPI)**, and **React**.
+This directory contains the complete OptiTask app. It is a static React/Vite site: task data and assistant actions run in the browser and persist in `localStorage`.
 
-## Features
-
-- ✅ **Min-Heap Priority Queue** (C implementation)
-- ✅ **Linked List** for task storage
-- ✅ **AI-powered suggestions** for category and priority
-- ✅ **Real-time analytics**
-- ✅ **Persistent storage**
-- ✅ **Modern React UI**
-
-## Tech Stack
-
-- **Backend Core:** C (Min-Heap + Linked List)
-- **API Server:** Python FastAPI
-- **Frontend:** React + Vite
-- **ML:** Scikit-learn (rule-based suggestions)
-
-## Setup Instructions
-
-### 1. Compile C Core
+## Run locally
 
 ```bash
-cd backend/c_core
-gcc -shared -o task_manager.dll task_manager.c -Wl,--out-implib,libtask_manager.a
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run lint
+npm run build
+```
+
+The repository workflow publishes `dist` to GitHub Pages after pushes to `main`.
